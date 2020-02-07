@@ -116,20 +116,12 @@ if (!function_exists('array_flatten')) {
         foreach ($array as $key => $value) {
             $newKey = $key;
             if (!is_null($prevKey)) {
-                if (is_numeric($key)) {
-                    $newKey = $prevKey;
-                } else {
-                    $newKey = $prevKey . '.' . $key;
-                }
+                $newKey = $prevKey . '.' . $key;
             }
             if (is_array($value)) {
                 $return += array_flatten($value, $newKey);
             } else {
-                if (is_numeric($key)) {
-                    $return[$newKey][] = $value;
-                } else {
-                    $return[$newKey] = $value;
-                }
+                $return[$newKey] = $value;
             }
         }
         return $return;
