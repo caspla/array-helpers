@@ -56,15 +56,16 @@ if (!function_exists('array_omit')) {
      * @param bool $negate
      * @return array
      */
-    function array_omit(array &$array, $keys, $negate = false)
+    function array_omit(array &$array, $keys)
     {
         if (!is_array($keys)) $keys = [$keys];
         $data = array_flatten($array);
         foreach (array_keys($data) as $idx) {
             foreach ($keys as $key) {
-                $hit = preg_match("/$key/", $idx);
-                if ($negate) $hit = !$hit;
-                if ($hit) unset($data[$idx]);
+                $regexp = '/^' . str_replace(['.', '*'], ['\.', '[\w|-]+'], $key) . '$/';
+                if (preg_match($regexp, $idx)) {
+                    unset($data[$idx]);
+                }
             }
         }
         return array_unflatten($data);
@@ -81,14 +82,25 @@ if (!function_exists('array_keep')) {
      */
     function array_keep(array &$array, $keys)
     {
-        return array_omit($array, $keys, true);
+        if (!is_array($keys)) $keys = [$keys];
+        $data = array_flatten($array);
+        $keep = [];
+        foreach (array_keys($data) as $idx) {
+            foreach ($keys as $key) {
+                $regexp = '/^' . str_replace(['.', '*'], ['\.', '[\w|-]+'], $key) . '$/';
+                if (preg_match($regexp, $idx)) {
+                    $keep[] = $idx;
+                }
+            }
+        }
+        foreach (array_keys($data) as $idx) {
+            if (!in_array($idx, $keep)) {
+                unset($data[$idx]);
+            }
+        }
+        return array_unflatten($data);
     }
 }
-
-
-const ARRAY_FLATTEN_BOTH = 0;
-const ARRAY_FLATTEN_NUMERIC_KEYS = 1;
-const ARRAY_FLATTEN_ASSOC_KEYS = 2;
 
 if (!function_exists('array_flatten')) {
     /**
@@ -96,27 +108,26 @@ if (!function_exists('array_flatten')) {
      *
      * @param array $array
      * @param null $prevKey
-     * @param int $flag
      * @return array
      */
-    function array_flatten(array &$array, $flag = ARRAY_FLATTEN_BOTH, $prevKey = null)
+    function array_flatten(array &$array, $prevKey = null)
     {
         $return = [];
         foreach ($array as $key => $value) {
             $newKey = $key;
-            if ($prevKey) {
-                if ($flag == ARRAY_FLATTEN_NUMERIC_KEYS && is_numeric($key)) {
+            if (!is_null($prevKey)) {
+                if (is_numeric($key)) {
                     $newKey = $prevKey;
                 } else {
                     $newKey = $prevKey . '.' . $key;
                 }
             }
             if (is_array($value)) {
-                $return += array_flatten($value, $flag, $newKey);
+                $return += array_flatten($value, $newKey);
             } else {
-                if ($flag == ARRAY_FLATTEN_NUMERIC_KEYS && is_numeric($key)) {
+                if (is_numeric($key)) {
                     $return[$newKey][] = $value;
-                } else if (in_array($flag, [ARRAY_FLATTEN_ASSOC_KEYS, ARRAY_FLATTEN_BOTH])) {
+                } else {
                     $return[$newKey] = $value;
                 }
             }
