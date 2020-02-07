@@ -63,7 +63,7 @@ if (!function_exists('array_omit')) {
         foreach (array_keys($data) as $idx) {
             foreach ($keys as $key) {
                 $regexp = '/^' . str_replace(['.', '*'], ['\.', '[\w|-]+'], $key) . '$/';
-                if (preg_match($regexp, $idx)) {
+                if (preg_match($regexp, (string)$idx)) {
                     unset($data[$idx]);
                 }
             }
@@ -139,7 +139,11 @@ if (!function_exists('array_unflatten')) {
     {
         $output = [];
         foreach ($array as $key => $value) {
-            $segments = explode('.', $key);
+            if (is_string($key)) {
+                $segments = explode('.', $key);
+            } else {
+                $segments[] = $key;
+            }
             $nested = &$output;
             while (count($segments) > 1) {
                 $nested = &$nested[array_shift($segments)];
